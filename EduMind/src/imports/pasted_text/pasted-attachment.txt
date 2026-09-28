@@ -1,0 +1,467 @@
+EduMind — Figma Mid-Fidelity Wireframe Prompt
+Design System Foundation (Before Any Screen)
+
+Before building any screen, establish the following design tokens in Figma:
+
+Color Palette:
+
+Primary: 
+#1E3A5F (Deep navy — authority, academic)
+Accent: 
+#E63946 (EduMind red — from branding)
+Surface: 
+#F8F9FA (Light background)
+Card: 
+#FFFFFF
+Border: 
+#E2E8F0
+Text Primary: 
+#1A202C
+Text Secondary: 
+#718096
+Success: 
+#38A169
+Warning: 
+#D69E2E
+Danger: 
+#E53E3E
+Purple accent (Individual tier): 
+#6B46C1
+Blue accent (Enterprise tier): 
+#2B6CB0
+
+Typography (Google Fonts — Inter):
+
+H1: 32px / Bold
+H2: 24px / Semibold
+H3: 18px / Semibold
+Body: 14px / Regular
+Caption: 12px / Regular
+Label: 11px / Medium / Uppercase + tracking
+
+Component Library to build first:
+
+Button (Primary, Secondary, Ghost, Danger) — 44px min height
+Input field (Default, Focus, Error, Disabled)
+Badge / Tag (Status colors)
+Card container (8px radius, shadow-sm)
+Sidebar nav item (Default, Active, Hover)
+Avatar circle
+Notification dot
+Progress bar
+Modal overlay
+Toast notification
+Dropdown menu
+Tab bar
+
+Grid: 12-column, 24px gutter, 1280px max-width container
+
+SECTION 1 — MARKETING / LANDING PAGE (Public, Pre-login)
+Screen 1.0 — EduMind Landing Page (Hero)
+
+Full-width marketing page. Dark navy hero section (
+#1E3A5F) with the EduMind logo top-left and a navigation bar containing: Home, Features, Pricing, About, and two CTA buttons — "Log In" (ghost/outline) and "Get Started Free" (red filled). Below the nav, a centered hero block with:
+
+Large headline: "Your Teaching Knowledge. Organized. Versioned. Intelligent."
+Subheading: "EduMind is the personal knowledge workspace for educators — build lesson plans, version your syllabi like code, and query your course materials through AI."
+Two CTA buttons: "Start for Free" (red, filled) and "See Enterprise" (navy outline)
+Below the CTAs: three small trust badges — "AWS-Powered," "RAG-Based AI," "No Internet Leakage"
+Hero illustration placeholder (right side): a mockup of the EduMind dashboard showing a lesson plan editor with a completion progress bar
+
+Below the hero, a 3-column feature highlight strip with icons:
+
+Build Curriculum Roadmaps — Visual week-by-week lesson planning
+Version Control for Educators — Commit your changes like a developer
+AI Knowledge Sessions — Query your own course materials, not the internet
+Screen 1.1 — Pricing Page
+
+Three-column pricing card layout centered on a light background.
+
+Column 1 — EduMind Free
+
+Badge: "Free Forever"
+Price: ₱0 / month
+Features list (checkmarks):
+1 active AI knowledge session
+Up to 3 lesson plans
+Basic version history (last 5 commits)
+Public/private toggle
+1 collaborator per document
+CTA button: "Get Started Free" (outline)
+
+Column 2 — EduMind Pro (highlighted with purple border and "Most Popular" badge)
+
+Badge: "Pro"
+Price: ₱299 / month or ₱2,499 / year
+Features list:
+Unlimited AI knowledge sessions
+Unlimited lesson plans and roadmaps
+Full version history with diff view
+Up to 10 collaborators per document
+Clone and fork public lesson plans
+Pull request and merge workflow
+Semantic search across personal library
+Priority support
+CTA button: "Upgrade to Pro" (purple filled)
+
+Column 3 — EduMind Pro Plus
+
+Badge: "Pro Plus"
+Price: ₱599 / month or ₱4,999 / year
+Features list:
+Everything in Pro
+Advanced analytics (session query history, version activity)
+Custom metadata tags per subject
+Early access to new features
+Dedicated onboarding session
+API access (beta)
+CTA button: "Upgrade to Pro Plus" (navy filled)
+
+Below the three cards, a full-width section with dark navy background:
+
+EduMind Enterprise — For Academic Institutions
+
+Headline: "Bring EduMind to your institution under your own domain"
+Subheading: "EduMind [Institution Name] — a fully governed, white-labeled knowledge management system for your faculty and executive directors"
+Two-column feature list:
+Custom domain: edumind.apc.edu.ph
+Faculty login via SSO (user@domain)
+Executive Director approval workflows
+Real-time compliance monitoring
+Cross-section delivery alignment monitor
+Shared activity bank and PPT bank
+Admin panel with full RBAC
+Custom institutional taxonomy
+Institution-level analytics dashboard
+CTA button: "Contact Us for Enterprise" (white outline)
+Screen 1.2 — Login / Sign Up Page
+
+Centered card on a light navy gradient background. EduMind logo top-center.
+
+Tab bar: "Log In" | "Sign Up"
+
+Log In tab:
+
+Input: Institutional Email or Username
+Input: Password (with show/hide toggle)
+Checkbox: "Remember me"
+Link: "Forgot password?"
+Button: "Log In" (red, full width)
+Divider: "or"
+Button: "Continue with Google" (outline, Google icon)
+Button: "Continue with SSO" (outline, building icon) — for Enterprise users
+Small note below: "Enterprise users: your login domain determines your workspace — user@apc.edu.ph will be routed to EduMind APC"
+
+Sign Up tab:
+
+Input: Full Name
+Input: Email
+Input: Password
+Input: Confirm Password
+Dropdown: "I am a..." (Lecturer / Teacher / Academic Practitioner / Other)
+Checkbox: Terms and Privacy
+Button: "Create Free Account" (red, full width)
+SECTION 2 — EDUMIND INDIVIDUAL (Post-login, Free / Pro / Pro Plus)
+Screen 2.0 — Individual Dashboard (Home)
+
+Layout: Fixed left sidebar (220px) + main content area.
+
+Left Sidebar:
+
+EduMind logo + user avatar with name and plan badge (Free / Pro / Pro Plus)
+Nav items (icon + label):
+Dashboard (active)
+My Lesson Plans
+Curriculum Roadmap
+AI Knowledge Sessions
+My Library
+Version History
+Collaborations
+Settings
+Bottom of sidebar: Upgrade CTA card (only shown for Free users) — "Unlock unlimited sessions — Upgrade to Pro" with a purple "Upgrade" button
+
+Main Content:
+
+Top bar: "Good morning, [First Name] 👋" + notification bell icon + search bar (semantic — placeholder: "Search your library...")
+Row of 3 summary cards:
+"Active Sessions" — number badge (e.g., 2 active)
+"Lesson Plans" — number + "3 of 3 used" (Free tier limit warning in amber)
+"Pending Pull Requests" — number badge
+Section: "My Subjects This Term"
+Grid of subject cards (2 columns), each showing:
+Subject code and name (e.g., "MNTSDEV — Systems Analysis")
+Term label (e.g., "AY 2026–2027 T1")
+Progress bar: "Roadmap completion — Week 4 of 16"
+Two buttons: "Open AI Session" and "View Lesson Plan"
+Section: "Recent Activity"
+List of timestamped activity items (e.g., "You committed v1.2 of MNTSDEV Syllabus — 2 hours ago")
+Screen 2.1 — Lesson Plan Builder
+
+Breadcrumb: Dashboard > My Lesson Plans > MNTSDEV T1 AY 2026–2027
+
+Two-column layout:
+
+Left column (60%) — Document editor:
+
+Document title input (large, editable inline)
+Template section fields (accordion-style, collapsible):
+Course Information (Subject Code, Section, Term, Units)
+Course Description
+Learning Objectives (SMART-guided — each objective has a helper tooltip: "Is this Specific? Measurable? Achievable? Relevant? Time-bound?")
+Weekly Topic Outline (table: Week number, Topic, Activity, Assessment)
+Reference Materials (list with year detection — references older than 5 years flagged in amber)
+Assessment Plan (weights table — total must equal 100%, validated in real-time)
+Bottom action bar: "Save as Draft" (ghost) | "Commit Version" (navy filled) | "Submit for Review" (red filled — Enterprise only, grayed out for Individual)
+
+Right column (40%) — Compliance monitor panel:
+
+Header: "Completion Status"
+Circular progress indicator: percentage filled (e.g., 72%)
+Checklist of required sections with status icons (green check / amber warning / red X):
+Course Information ✅
+Learning Objectives ⚠️ (2 of 4 objectives missing time-bound criteria)
+Weekly Outline ✅
+References ⚠️ (3 references older than 5 years detected)
+Assessment Weights ❌ (Total: 95% — must equal 100%)
+"Fix Issues" button that scrolls to the first flagged field
+Screen 2.2 — Curriculum Roadmap View
+
+Breadcrumb: Dashboard > Curriculum Roadmap > MNTSDEV T1
+
+Tab bar: Timeline View | Kanban View
+
+Timeline View (default):
+
+Horizontal week-by-week timeline (Week 1 to Week 16)
+Each week is a column with cards inside:
+Topic card (color-coded by type: Lecture / Lab / Assessment)
+Activity badge
+Assessment indicator (if applicable)
+Weeks can be dragged and reordered
+"Add Topic" button on each week column
+Right sidebar: "Term Summary" — total topics, total assessments, total activities, coverage percentage
+
+Kanban View:
+
+Columns: Not Started | In Progress | Covered | Skipped
+Each card shows: Week number, Topic, Section tag
+Draggable between columns to mark coverage status
+Color indicator: green (covered on time) / amber (covered late) / red (skipped)
+Screen 2.3 — AI Knowledge Session
+
+Breadcrumb: Dashboard > AI Knowledge Sessions > MNTSDEV T1
+
+Two-panel layout:
+
+Left panel (35%) — Session materials sidebar:
+
+Session header: Subject name + term label
+"Session Scope" badge: "Scoped to MNTSDEV T1 — No external sources"
+Uploaded materials list (file items with icon, filename, upload date, and a remove button):
+MNTSDEV_Syllabus_v1.2.pdf ✅ Indexed
+Week1_Lecture.pptx ✅ Indexed
+Week2_Activity_Guide.docx ⏳ Indexing...
+Progress bar: "3 of 5 files indexed"
+"Upload Materials" button (+ Add Files)
+Collaborators section: avatar list of invited collaborators with their role badge (Viewer / Editor)
+"Invite Collaborator" button
+
+Right panel (65%) — Chat interface:
+
+Session title bar: "EduMind AI — MNTSDEV T1 Session" + a small "RAG" badge
+Message history area:
+User bubble (right-aligned, navy): "What topics have I covered up to Week 4 based on my roadmap?"
+AI response bubble (left-aligned, light gray): "Based on your uploaded roadmap and syllabus, you have covered: Week 1 — Introduction to Systems Analysis, Week 2 — Requirements Gathering, Week 3 — Use Case Modeling, Week 4 — Activity Diagrams. Source: MNTSDEV_Syllabus_v1.2.pdf, Section 3."
+Source citation chip below AI response: "📄 MNTSDEV_Syllabus_v1.2.pdf"
+Input bar at bottom:
+Text input: placeholder "Ask a question about your course materials..."
+Send button (red icon)
+Small disclaimer below input: "Responses are generated only from materials uploaded to this session. No external internet access."
+Screen 2.4 — Version History (Commit Log)
+
+Breadcrumb: Dashboard > Version History > MNTSDEV Syllabus
+
+Full-width vertical timeline:
+
+Each commit entry contains:
+Version badge (e.g., v1.3) in navy pill
+Commit message (e.g., "Updated Week 4 after class suspension — added makeup topic")
+Actor name + avatar
+Timestamp
+Status tag: Active Version (green) / Archived / Draft
+"View Diff" button — opens a side-by-side diff modal
+"Restore This Version" button (ghost, only for non-active versions)
+
+Diff modal (opened on "View Diff"):
+
+Split view: left side (previous version) and right side (current version)
+Changed sections highlighted:
+Red background = removed content
+Green background = added content
+Human-readable summary at the top: "Week 4 topic changed from 'TBA' to 'Makeup Session: Activity Diagrams.' Assessment weight for midterm changed from 30% to 25%."
+Screen 2.5 — Collaborations (Pull Requests)
+
+Breadcrumb: Dashboard > Collaborations
+
+Two-tab layout: Incoming Requests | My Requests
+
+Incoming Requests tab:
+
+List of pull request cards, each showing:
+Document name and version
+Proposer name + avatar
+Summary of changes (e.g., "Updated 3 learning objectives and added Week 6 activity")
+Timestamp
+Two buttons: "Review Changes" (navy outline) and "Merge" (green filled) and "Decline" (red ghost)
+
+My Requests tab:
+
+List of pull requests the user has submitted to other document owners
+Status badge: Pending / Merged / Declined
+SECTION 3 — EDUMIND ENTERPRISE (Post-login, Institution)
+
+Note: Enterprise screens are for presentation and investor demo purposes. The institution accesses EduMind via their own custom domain — e.g., edumind.apc.edu.ph — and faculty log in as user@apc.edu.ph via SSO.
+
+Screen 3.0 — Enterprise Landing / Domain Login
+
+Branded login page reflecting the institution's identity. Top-left: "EduMind APC" logo (EduMind logo + APC seal side by side). Background: navy gradient.
+
+Headline: "EduMind APC — Smart-Assisted Knowledge Management"
+Subheading: "Sign in with your APC institutional account"
+Input: Institutional email (user@apc.edu.ph)
+Input: Password
+Button: "Sign In" (red filled)
+Button: "Sign in with SSO" (outline with institution logo)
+Small note: "This portal is exclusively for Asia Pacific College faculty and administrators. For personal use, visit edumind.com"
+Screen 3.1 — Faculty Member Dashboard (Enterprise)
+
+Same sidebar layout as Individual but with enterprise-specific nav items:
+
+Left Sidebar nav:
+
+Dashboard
+My Syllabi
+Lesson Plans
+AI Knowledge Sessions
+Activity Bank
+PPT Bank
+Collaboration Space
+Cross-Section Monitor
+Notifications
+Settings
+
+Main content:
+
+Top bar: greeting + notification bell (with red badge showing pending peer review count) + search bar
+Alert banner (amber): "2 syllabi require your peer review — due in 3 days"
+Summary cards row:
+Pending Peer Reviews: 2
+Syllabus Approval Status: Approved / Pending / Rejected count
+Upcoming Deadline: "T1 Syllabus Submission — 5 days remaining"
+Cross-Section Alert: "MNTSDEV Section B is 2 weeks behind your section"
+My Subjects grid — same as Individual but with additional "Submission Status" badge per subject (Draft / Submitted / In Review / Approved)
+Screen 3.2 — Syllabus Submission and Peer Review
+
+Breadcrumb: My Syllabi > MNTSDEV > Submit
+
+Same lesson plan builder layout as Screen 2.1 but with:
+
+Workflow status bar at the top (horizontal stepper):
+Step 1: Draft ✅
+Step 2: Compliance Check ✅
+Step 3: Peer Review ⏳ (current)
+Step 4: ED Approval
+Step 5: Approved
+Right panel shows both Compliance Monitor AND a "Peer Review" section below it:
+Reviewer 1: [Co-faculty name] — Status: Approved ✅
+Reviewer 2: [Co-faculty name] — Status: Pending ⏳
+"All peer reviews must be approved before escalation to ED"
+Bottom action bar adds: "Submit to ED" button (active only when all peer reviews are approved)
+Screen 3.3 — Cross-Section Delivery Alignment Monitor
+
+Breadcrumb: Dashboard > Cross-Section Monitor
+
+Full-width table layout:
+
+Header: "MNTSDEV — T1 AY 2026–2027 — Cross-Section Delivery Progress"
+
+Table columns: Section | Faculty | Current Week Covered | Expected Week | Status | Last Updated
+
+Example rows:
+
+Section A | John Lopez | Week 6 | Week 6 | ✅ On Track | Today
+Section B | Jane Santos | Week 4 | Week 6 | ⚠️ 2 Weeks Behind | 3 days ago
+Section C | Mark Reyes | Week 7 | Week 6 | ✅ Slightly Ahead | Yesterday
+
+Below the table: a horizontal grouped bar chart showing each section's weekly progress side by side across the 16-week term.
+
+Right side: "Flag Misalignment" button — opens a modal to send an automated notification to the flagged faculty member and the Executive Director.
+
+Screen 3.4 — Executive Director Dashboard (Enterprise)
+
+Same sidebar as Faculty Enterprise but with ED-specific nav:
+
+Dashboard
+Pending Approvals
+Revision Audit Trail
+Cross-Section Monitor
+Analytics Dashboard
+Repository Overview
+Settings
+
+Main content:
+
+Top bar: greeting + notification bell
+Alert banner (red): "5 syllabi are pending your approval — 2 are overdue"
+Summary cards:
+Pending Approvals: 5
+Overdue Submissions: 2
+Avg. Approval Time This Term: 3.2 hours
+Cross-Section Flags: 1 active misalignment
+Pending Approvals table: Subject | Faculty | Version | Peer Review Status | Compliance Score | Date Submitted | Actions (Review / Approve / Return)
+Toggle at top right: "Viewing as: Executive Director | Switch to Faculty View" (only enabled if ED is flagged as teaching)
+Screen 3.5 — Analytics Dashboard (Enterprise)
+
+Full-width dashboard with metric cards and charts:
+
+Row 1 — KPI cards:
+
+Avg. Syllabus Preparation Time: 4.2 hrs (vs. 12–30 hr baseline) — green downward arrow
+Avg. ED Approval Time: 3.8 hrs (vs. 8 hr baseline) — green downward arrow
+Untracked Revisions This Term: 0 — green badge
+Active Cross-Section Misalignments: 1 — amber badge
+
+Row 2 — Charts:
+
+Line chart: Submission rate over time (weeks 1–16)
+Bar chart: Approval turnaround time per faculty member
+Donut chart: Syllabus status breakdown (Draft / Submitted / In Review / Approved / Returned)
+
+Row 3 — Table: Faculty compliance summary — Name | Subjects | Submitted | Approved | Compliance Score
+
+Screen 3.6 — Admin Panel (Enterprise)
+
+Left sub-nav within Admin: Accounts | RBAC & Roles | Departments & Subjects | Term Settings | Audit Logs | System Health
+
+Accounts tab (default):
+
+Summary row: Total Accounts | Active Faculty | Active EDs | Pending Requests
+Accounts table: Name | Role | Department | Status | Teaching Flag (toggle) | Actions (Edit / Deactivate / Reset Password)
+"Create New Account" button top-right
+"Teaching Flag" column: toggle switch per ED row — when enabled, grants faculty-level feature access
+
+Term Settings tab:
+
+Academic term list with status (Active / Closed / Upcoming)
+"Initialize New Term" button — opens a modal to set term name, dates, and which subjects trigger AI sessions
+"Archive Expired Sessions" button
+Additional Design Notes (React + Tailwind CSS + AWS)
+All components should be built as reusable React components with clear prop variants — e.g., <Button variant="primary" size="md"> or <Badge status="approved">
+Use Tailwind utility classes — no custom CSS unless absolutely necessary. Use @apply sparingly only for complex repeated patterns
+All modals use a backdrop blur overlay (backdrop-blur-sm bg-black/40)
+All tables are sortable and filterable by default — include filter row in the design
+All forms use controlled inputs — design should show the validation state visually (red border + error message below field)
+AWS Cognito auth flow — the login screen must account for three flows: email/password (Individual), Google OAuth (Individual), and SSO redirect (Enterprise — routes based on email domain)
+Mobile responsive breakpoints — design all screens at 1280px desktop but note which components collapse into mobile-friendly views at 768px (tablet) and 375px (mobile)
+Loading states — every data fetch should have a skeleton loader variant. Design the skeleton version of the Dashboard, Lesson Plan list, and AI Session chat
+Empty states — design an empty state illustration placeholder for: No lesson plans yet, No AI sessions yet, No notifications, No pending approvals
