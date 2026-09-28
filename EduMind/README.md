@@ -3,9 +3,9 @@
 
   This is a code bundle for Open Learning Type. The original project is available at https://www.figma.com/design/SSzYgZmuOPlu60KhVvDvkP/Open-Learning-Type.
 
-  ## Running the code
+  ## Running the app
 
-  Run `npm i` to install the dependencies.
+  From this directory, run `pnpm install` to install the dependencies.
 
-  Run `npm run dev` to start the development server.
+  Run `pnpm dev` to start the development server, `pnpm build` to create a production build, or `pnpm preview` to serve that build locally.
   
