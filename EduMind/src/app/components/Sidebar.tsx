@@ -2,7 +2,7 @@ import { Typography, Box } from '@mui/material';
 import {
   LayoutDashboard, FileText, Bot, CheckSquare, GitBranch, Bell,
   FolderOpen, BarChart2, Monitor, Settings, LogOut, BookOpen,
-  UserCog, Shield, Building2, Calendar, ClipboardList, Activity
+  UserCog, Shield, Building2, Calendar, ClipboardList, Activity, Map
 } from 'lucide-react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import logoImage from '../../imports/Screenshot_2026-05-19_111637.png';
@@ -13,11 +13,14 @@ interface NavItem { id: string; label: string; icon: React.ElementType; }
 
 const FACULTY_NAV: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'my-workspace', label: 'My Workspace', icon: LayoutDashboard },
   { id: 'my-syllabi', label: 'My Syllabi', icon: FileText },
   { id: 'lesson-plans', label: 'Lesson Plans', icon: FileText },
+  { id: 'roadmap', label: 'Curriculum Roadmap', icon: Map },
   { id: 'ai-session', label: 'AI Knowledge Sessions', icon: Bot },
   { id: 'activity-bank', label: 'Activity Bank', icon: BookOpen },
   { id: 'ppt-bank', label: 'PPT Bank', icon: FolderOpen },
+  { id: 'commit-log', label: 'Commit Log', icon: GitBranch },
   { id: 'collaboration', label: 'Collaboration Space', icon: CheckSquare },
   { id: 'cross-section', label: 'Cross-Section Monitor', icon: Monitor },
   { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -46,7 +49,7 @@ const ADMIN_NAV: NavItem[] = [
 
 const ROLE_LABELS: Record<EnterpriseRole, string> = {
   faculty: 'Faculty Member',
-  executive_director: 'Executive Director',
+  executive_director: 'Reviewer · Executive Director',
   admin: 'System Administrator',
 };
 

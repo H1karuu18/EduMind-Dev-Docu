@@ -1,221 +1,247 @@
-import { useState } from "react";
-
-// Public pages
-import LandingPage from "./components/LandingPage";
-import PricingPage from "./components/PricingPage";
+import { useEffect, useRef, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
 import PublicLogin from "./components/PublicLogin";
-import EnterpriseLogin from "./components/EnterpriseLogin";
-
-// Individual mode
-import IndividualSidebar from "./components/IndividualSidebar";
 import IndividualDashboard from "./components/IndividualDashboard";
 import LessonPlanBuilder from "./components/LessonPlanBuilder";
 import CurriculumRoadmap from "./components/CurriculumRoadmap";
 import AIKnowledgeSession from "./components/AIKnowledgeSession";
 import CommitLog from "./components/CommitLog";
 import CollaborationsPage from "./components/CollaborationsPage";
-
-// Enterprise mode
 import Sidebar from "./components/Sidebar";
 import EnterpriseFacultyDashboard from "./components/EnterpriseFacultyDashboard";
 import SyllabusSubmission from "./components/SyllabusSubmission";
 import PeerReviewScreen from "./components/PeerReviewScreen";
-import EDDashboard from "./components/EDDashboard";
-import SyllabusApprovalED from "./components/SyllabusApprovalED";
 import ActivityBank from "./components/ActivityBank";
 import AdminPanel from "./components/AdminPanel";
 import VersionHistory from "./components/VersionHistory";
 import CrossSectionMonitor from "./components/CrossSectionMonitor";
+import EDDashboard from "./components/EDDashboard";
+import SyllabusApprovalED from "./components/SyllabusApprovalED";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import AISubjectSession from "./components/AISubjectSession";
+import { getSupabaseClient } from "./supabase";
 
-type AppMode = "public" | "individual" | "enterprise";
+type EnterpriseRole = "faculty" | "executive_director" | "admin";
 type IndividualPlan = "free" | "pro" | "pro_plus";
-type EnterpriseRole =
-  "faculty" | "executive_director" | "admin";
+
+interface UserProfile {
+  auth_user_id: string;
+  full_name: string;
+  role: "Educator" | "Collaborator" | "Reviewer" | "Admin";
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "An unexpected authentication error occurred.";
+}
 
 export default function App() {
-  const [mode, setMode] = useState<AppMode>("public");
-  const [publicPage, setPublicPage] = useState("landing");
-  const [individualPlan, setIndividualPlan] =
-    useState<IndividualPlan>("free");
-  const [enterpriseRole, setEnterpriseRole] =
-    useState<EnterpriseRole>("faculty");
-  const [userName, setUserName] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [individualPlan] = useState<IndividualPlan>("free");
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const currentUserId = useRef<string | null>(null);
 
-  // Public navigation can trigger login/enterprise modes
-  const handlePublicNavigate = (page: string) => {
-    if (page === "enterprise-login") {
-      setPublicPage("enterprise-login");
-    } else {
-      setPublicPage(page);
-    }
-  };
+  useEffect(() => {
+    let mounted = true;
+    const profileLoads = new Map<string, Promise<UserProfile>>();
 
-  const handlePublicLogin = (
-    loginMode: "individual" | "enterprise",
-    role: "individual" | EnterpriseRole,
-    name: string,
-    plan?: IndividualPlan,
-  ) => {
-    setUserName(name);
-    if (loginMode === "individual") {
-      setIndividualPlan(plan || "free");
-      setCurrentPage("dashboard");
-      setMode("individual");
-    } else {
-      setEnterpriseRole(role as EnterpriseRole);
-      setCurrentPage(
-        role === "admin" ? "manage-accounts" : "dashboard",
-      );
-      setMode("enterprise");
-    }
-  };
+    const loadProfile = (user: User): Promise<UserProfile> => {
+      const inProgress = profileLoads.get(user.id);
+      if (inProgress) return inProgress;
 
-  const handleEnterpriseLogin = (
-    role: EnterpriseRole,
-    name: string,
-  ) => {
-    setEnterpriseRole(role);
-    setUserName(name);
-    setCurrentPage(
-      role === "admin" ? "manage-accounts" : "dashboard",
-    );
-    setMode("enterprise");
-  };
+      const request = (async () => {
+        const client = getSupabaseClient();
+        const { data: existing, error: lookupError } = await client
+          .from("profiles")
+          .select("auth_user_id, full_name, role")
+          .eq("auth_user_id", user.id)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+        if (existing) return existing as UserProfile;
+        if (!user.email) {
+          throw new Error("The OAuth provider did not return an email address. Enable email access for this provider.");
+        }
 
-  const handleLogout = () => {
-    setMode("public");
-    setPublicPage("landing");
-    setCurrentPage("dashboard");
-    setUserName("");
-  };
+        const metadataName = user.user_metadata?.full_name
+          || user.user_metadata?.name
+          || user.user_metadata?.fullName;
+        const fullName = typeof metadataName === "string" && metadataName.trim()
+          ? metadataName.trim()
+          : user.email?.split("@")[0] || "Educator";
+        const avatarMetadata = user.user_metadata?.avatar_url
+          || user.user_metadata?.picture
+          || null;
+        const avatarUrl = typeof avatarMetadata === "string" ? avatarMetadata : null;
 
-  // ── PUBLIC mode ──────────────────────────────────────────────────────────────
-  if (mode === "public") {
-    if (publicPage === "pricing") {
-      return <PricingPage onNavigate={handlePublicNavigate} />;
-    }
-    if (publicPage === "login") {
-      return (
-        <PublicLogin
-          onLogin={handlePublicLogin}
-          onNavigate={handlePublicNavigate}
-        />
-      );
-    }
-    if (publicPage === "enterprise-login") {
-      return (
-        <EnterpriseLogin
-          onLogin={handleEnterpriseLogin}
-          onNavigate={handlePublicNavigate}
-        />
-      );
-    }
-    return <LandingPage onNavigate={handlePublicNavigate} />;
-  }
+        const { error: insertError } = await client.from("profiles").upsert(
+          {
+            id: user.id,
+            auth_user_id: user.id,
+            full_name: fullName,
+            email: user.email,
+            avatar_url: avatarUrl,
+            role: "Educator",
+          },
+          { onConflict: "auth_user_id", ignoreDuplicates: true },
+        );
+        if (insertError) throw insertError;
 
-  // ── INDIVIDUAL mode ──────────────────────────────────────────────────────────
-  if (mode === "individual") {
-    const renderIndividualPage = () => {
-      switch (currentPage) {
-        case "dashboard":
-          return (
-            <IndividualDashboard
-              userName={userName}
-              plan={individualPlan}
-              onNavigate={setCurrentPage}
-            />
-          );
-        case "lesson-plans":
-          return <LessonPlanBuilder />;
-        case "roadmap":
-          return <CurriculumRoadmap />;
-        case "ai-session":
-          return <AIKnowledgeSession />;
-        case "commit-log":
-          return <CommitLog />;
-        case "collaborations":
-          return <CollaborationsPage />;
-        case "activity-bank":
-          return <ActivityBank />;
-        default:
-          return (
-            <IndividualDashboard
-              userName={userName}
-              plan={individualPlan}
-              onNavigate={setCurrentPage}
-            />
-          );
-      }
+        const { data: created, error: createdError } = await client
+          .from("profiles")
+          .select("auth_user_id, full_name, role")
+          .eq("auth_user_id", user.id)
+          .single();
+        if (createdError) throw createdError;
+        return created as UserProfile;
+      })().catch((error: unknown) => {
+        profileLoads.delete(user.id);
+        throw error;
+      });
+
+      profileLoads.set(user.id, request);
+      return request;
     };
+
+    const applySession = (nextSession: Session | null) => {
+      if (!mounted) return;
+      const nextUserId = nextSession?.user.id ?? null;
+      currentUserId.current = nextUserId;
+      setSession(nextSession);
+      setAuthError("");
+
+      if (!nextSession) {
+        profileLoads.clear();
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      setProfile(null);
+      setLoading(true);
+      window.setTimeout(() => {
+        void loadProfile(nextSession.user)
+          .then((nextProfile) => {
+            if (!mounted || currentUserId.current !== nextUserId) return;
+            setProfile(nextProfile);
+            setCurrentPage("dashboard");
+            setLoading(false);
+          })
+          .catch((error: unknown) => {
+            if (!mounted || currentUserId.current !== nextUserId) return;
+            setAuthError(getErrorMessage(error));
+            setLoading(false);
+          });
+      }, 0);
+    };
+
+    let unsubscribe = () => {};
+    try {
+      const client = getSupabaseClient();
+      const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
+        applySession(nextSession);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
+
+      void client.auth.getSession()
+        .then(({ data: sessionData, error }) => {
+          if (error) throw error;
+          applySession(sessionData.session);
+        })
+        .catch((error: unknown) => {
+          if (!mounted) return;
+          setAuthError(getErrorMessage(error));
+          setLoading(false);
+        });
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+      setLoading(false);
+    }
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const handleSignIn = async (provider: "google" | "azure") => {
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const client = getSupabaseClient();
+      const { error } = await client.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+          ...(provider === "azure" ? { scopes: "email" } : {}),
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+      setAuthLoading(false);
+    }
+  };
+
+  const handlePasswordSignIn = async (email: string, password: string) => {
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setAuthError("");
+    try {
+      const { error } = await getSupabaseClient().auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="size-full flex">
-        <IndividualSidebar
-          currentPage={currentPage}
-          onNavigate={setCurrentPage}
-          userName={userName}
-          plan={individualPlan}
-          onLogout={handleLogout}
-        />
-        <div className="flex-1 overflow-hidden">
-          {renderIndividualPage()}
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
+        <span className="text-sm text-[#718096]">Loading your EduMind account…</span>
       </div>
     );
   }
 
-  // ── ENTERPRISE mode ──────────────────────────────────────────────────────────
+  if (!session || !profile) {
+    return (
+      <PublicLogin
+        onSignIn={handleSignIn}
+        onSignOut={session ? handleLogout : undefined}
+        error={authError}
+        loading={authLoading}
+        onPasswordSignIn={import.meta.env.VITE_ENABLE_TEST_LOGIN === "true" ? handlePasswordSignIn : undefined}
+      />
+    );
+  }
+
+  const userName = profile.full_name;
+  const enterpriseRole: EnterpriseRole = profile.role === "Admin"
+    ? "admin"
+    : profile.role === "Reviewer"
+      ? "executive_director"
+      : "faculty";
+  const handleNavigate = (page: string) => setCurrentPage(page);
+
   const renderEnterprisePage = () => {
-    if (enterpriseRole === "faculty") {
-      switch (currentPage) {
-        case "dashboard":
-          return (
-            <EnterpriseFacultyDashboard
-              userName={userName}
-              onNavigate={setCurrentPage}
-            />
-          );
-        case "my-syllabi":
-          return <SyllabusSubmission />;
-        case "submit-syllabus":
-          return <SyllabusSubmission />;
-        case "lesson-plans":
-          return <LessonPlanBuilder />;
-        case "peer-review":
-          return <PeerReviewScreen />;
-        case "ai-session":
-          return <AIKnowledgeSession />;
-        case "activity-bank":
-          return <ActivityBank />;
-        case "version-history":
-          return <VersionHistory />;
-        case "cross-section":
-          return <CrossSectionMonitor />;
-        case "collaborations":
-        case "collaboration":
-          return <CollaborationsPage />;
-        default:
-          return (
-            <EnterpriseFacultyDashboard
-              userName={userName}
-              onNavigate={setCurrentPage}
-            />
-          );
-      }
-    }
+    if (enterpriseRole === "admin") return <AdminPanel />;
 
     if (enterpriseRole === "executive_director") {
       switch (currentPage) {
-        case "dashboard":
         case "pending-approvals":
-          return (
-            <EDDashboard
-              userName={userName}
-              onNavigate={setCurrentPage}
-            />
-          );
+          return <EDDashboard userName={userName} onNavigate={handleNavigate} />;
         case "ed-approval":
           return <SyllabusApprovalED />;
         case "version-history":
@@ -226,35 +252,62 @@ export default function App() {
           return <AnalyticsDashboard />;
         case "repository":
           return <ActivityBank />;
+        case "ai-session":
+          return <AISubjectSession />;
         default:
-          return (
-            <EDDashboard
-              userName={userName}
-              onNavigate={setCurrentPage}
-            />
-          );
+          return <EDDashboard userName={userName} onNavigate={handleNavigate} />;
       }
     }
 
-    if (enterpriseRole === "admin") {
-      return <AdminPanel />;
+    switch (currentPage) {
+      case "my-workspace":
+        return (
+          <IndividualDashboard
+            userName={userName}
+            plan={individualPlan}
+            onNavigate={handleNavigate}
+          />
+        );
+      case "my-syllabi":
+      case "submit-syllabus":
+        return <SyllabusSubmission />;
+      case "lesson-plans":
+        return <LessonPlanBuilder />;
+      case "roadmap":
+        return <CurriculumRoadmap />;
+      case "commit-log":
+        return <CommitLog />;
+      case "library":
+        return <ActivityBank />;
+      case "peer-review":
+        return <PeerReviewScreen />;
+      case "ai-session":
+        return <AIKnowledgeSession />;
+      case "activity-bank":
+      case "ppt-bank":
+        return <ActivityBank />;
+      case "version-history":
+        return <VersionHistory />;
+      case "cross-section":
+        return <CrossSectionMonitor />;
+      case "collaborations":
+      case "collaboration":
+        return <CollaborationsPage />;
+      default:
+        return <EnterpriseFacultyDashboard userName={userName} onNavigate={handleNavigate} />;
     }
-
-    return null;
   };
 
   return (
     <div className="size-full flex">
       <Sidebar
         currentPage={currentPage}
-        onNavigate={setCurrentPage}
+        onNavigate={handleNavigate}
         userRole={enterpriseRole}
         userName={userName}
         onLogout={handleLogout}
       />
-      <div className="flex-1 overflow-hidden">
-        {renderEnterprisePage()}
-      </div>
+      <div className="flex-1 overflow-hidden">{renderEnterprisePage()}</div>
     </div>
   );
 }
