@@ -3,14 +3,17 @@ import { useState } from 'react';
 import { BookOpen, Chrome, Building2, Mail } from 'lucide-react';
 
 type OAuthProvider = 'google' | 'azure';
+type DemoRole = 'Educator' | 'Reviewer' | 'Admin';
 
-const DEMO_ACCOUNTS = [
-  { label: 'Educator / Faculty', email: 'educator.demo@example.com' },
-  { label: 'Reviewer / Executive Director', email: 'reviewer.demo@example.com' },
+const DEMO_ROLES: { label: string; role: DemoRole }[] = [
+  { label: 'Educator / Faculty', role: 'Educator' },
+  { label: 'Reviewer / Executive Director', role: 'Reviewer' },
+  { label: 'Admin', role: 'Admin' },
 ];
 
 interface PublicLoginProps {
   onSignIn: (provider: OAuthProvider) => void;
+  onDemoSignIn?: (role: DemoRole) => void;
   onSignOut?: () => void;
   onPasswordSignIn?: (email: string, password: string) => void;
   onRegister?: (email: string, password: string) => void;
@@ -22,6 +25,7 @@ interface PublicLoginProps {
 
 export default function PublicLogin({
   onSignIn,
+  onDemoSignIn,
   onSignOut,
   onPasswordSignIn,
   onRegister,
@@ -85,7 +89,7 @@ export default function PublicLogin({
               Sign in securely with your Google, Microsoft, or email account.
             </Typography>
 
-            {!supabaseConfigured && (
+            {!supabaseConfigured && !onDemoSignIn && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
                 Supabase is not configured for this build. Set VITE_SUPABASE_URL and
                 VITE_SUPABASE_PUBLISHABLE_KEY in your deployment settings, then redeploy.
@@ -136,6 +140,33 @@ export default function PublicLogin({
                 Continue with Microsoft
               </Button>
             </div>
+
+            {onDemoSignIn && (
+              <>
+                <div className="my-5 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-[#E2E8F0]" />
+                  <Typography variant="caption" sx={{ color: '#718096' }}>local presentation demo</Typography>
+                  <span className="h-px flex-1 bg-[#E2E8F0]" />
+                </div>
+                <Alert severity="info" sx={{ mb: 2, borderRadius: '8px' }}>
+                  Demo mode is local to this development server and does not sign in to Supabase.
+                </Alert>
+                <div className="flex flex-col gap-2">
+                  {DEMO_ROLES.map((demo) => (
+                    <Button
+                      key={demo.role}
+                      fullWidth
+                      variant="outlined"
+                      disabled={loading}
+                      onClick={() => onDemoSignIn(demo.role)}
+                      sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 44 }}
+                    >
+                      Open {demo.label} demo
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
 
             {(onPasswordSignIn || onRegister) && (
               <>
@@ -219,31 +250,6 @@ export default function PublicLogin({
                 >
                   {isRegisterMode ? 'Create account with email' : 'Sign in with email'}
                 </Button>
-                <div className="mt-4">
-                  <Typography variant="caption" sx={{ display: 'block', color: '#718096', mb: 1 }}>
-                    Demo accounts — select an email, then enter its Supabase password:
-                  </Typography>
-                  <div className="flex flex-col gap-1">
-                    {DEMO_ACCOUNTS.map((account) => (
-                      <Button
-                        key={account.email}
-                        size="small"
-                        variant="text"
-                        disabled={loading}
-                        onClick={() => {
-                          setEmail(account.email);
-                          setPassword('');
-                          setConfirmPassword('');
-                          setIsRegisterMode(false);
-                          setFormError('');
-                        }}
-                        sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                      >
-                        {account.label}: {account.email}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
               </>
             )}
 

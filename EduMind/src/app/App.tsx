@@ -23,6 +23,10 @@ import { getSupabaseClient, hasSupabaseConfig } from "./supabase";
 
 type EnterpriseRole = "faculty" | "executive_director" | "admin";
 type IndividualPlan = "free" | "pro" | "pro_plus";
+type DemoRole = "Educator" | "Reviewer" | "Admin";
+
+const localDemoEnabled =
+  import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_LOGIN === "true";
 
 interface UserProfile {
   auth_user_id: string;
@@ -37,6 +41,7 @@ function getErrorMessage(error: unknown): string {
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [demoProfile, setDemoProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -49,6 +54,7 @@ export default function App() {
     if (!hasSupabaseConfig()) {
       setSession(null);
       setProfile(null);
+      setDemoProfile(null);
       setLoading(false);
       setAuthError("");
       return;
@@ -119,6 +125,7 @@ export default function App() {
       const nextUserId = nextSession?.user.id ?? null;
       currentUserId.current = nextUserId;
       setSession(nextSession);
+      setDemoProfile(null);
       setAuthError("");
       setAuthMessage("");
 
@@ -251,8 +258,32 @@ export default function App() {
     }
   };
 
+  const handleDemoSignIn = (role: DemoRole) => {
+    if (!localDemoEnabled) return;
+    const names: Record<DemoRole, string> = {
+      Educator: "Demo Educator",
+      Reviewer: "Demo Executive Director",
+      Admin: "Demo Administrator",
+    };
+    setAuthError("");
+    setAuthMessage("");
+    setProfile(null);
+    setDemoProfile({
+      auth_user_id: `local-demo-${role.toLowerCase()}`,
+      full_name: names[role],
+      role,
+    });
+    setCurrentPage("dashboard");
+  };
+
   const handleLogout = async () => {
     setAuthError("");
+    if (demoProfile) {
+      setDemoProfile(null);
+      setProfile(null);
+      setCurrentPage("dashboard");
+      return;
+    }
     try {
       const { error } = await getSupabaseClient().auth.signOut();
       if (error) throw error;
@@ -269,11 +300,13 @@ export default function App() {
     );
   }
 
-  if (!session || !profile) {
+  const activeProfile = demoProfile ?? profile;
+  if ((!session && !demoProfile) || !activeProfile) {
     return (
       <PublicLogin
         onSignIn={handleSignIn}
-        onSignOut={session ? handleLogout : undefined}
+        onDemoSignIn={localDemoEnabled ? handleDemoSignIn : undefined}
+        onSignOut={session || demoProfile ? handleLogout : undefined}
         error={authError}
         message={authMessage}
         loading={authLoading}
@@ -284,10 +317,10 @@ export default function App() {
     );
   }
 
-  const userName = profile.full_name;
-  const enterpriseRole: EnterpriseRole = profile.role === "Admin"
+  const userName = activeProfile.full_name;
+  const enterpriseRole: EnterpriseRole = activeProfile.role === "Admin"
     ? "admin"
-    : profile.role === "Reviewer"
+    : activeProfile.role === "Reviewer"
       ? "executive_director"
       : "faculty";
   const handleNavigate = (page: string) => setCurrentPage(page);

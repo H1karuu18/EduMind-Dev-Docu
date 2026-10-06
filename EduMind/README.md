@@ -17,14 +17,24 @@ plus `SUPABASE_PUBLISHABLE_KEY` (or a legacy anon `SUPABASE_KEY`) are also suppo
 The app rejects secret/service-role keys. On Vercel, add the variables for every
 deployment environment and redeploy after changing them.
 
-For a presentation, create these users in Supabase under **Authentication → Users**:
+For a real Supabase presentation, create these users in Supabase under
+**Authentication → Users**, set a password for each one, and confirm their email:
 
 - `educator.demo@example.com`
 - `reviewer.demo@example.com`
+- `admin.demo@example.com`
 
-Set a password for each account in Supabase, then run [`supabase/demo_accounts.sql`](./supabase/demo_accounts.sql)
-in the Supabase SQL Editor. This creates the educator profile and assigns the reviewer
-profile the `Reviewer` role used for the Executive Director view. The app offers buttons
-to fill either demo email; enter the corresponding password to sign in. Do not put demo
-passwords, service-role keys, or other secrets in frontend code.
+Then run [`supabase/demo_accounts.sql`](./supabase/demo_accounts.sql) in the Supabase SQL
+Editor. It creates/updates the application profiles as `Educator`, `Reviewer` (Executive
+Director view), and `Admin`. The script stops with a clear error if any Auth user is
+missing. Enter the matching email and password in the sign-in form. The SQL intentionally
+does not insert directly into `auth.users` or store
+passwords: create Auth users through Supabase so passwords are safely hashed and Auth
+metadata is properly initialized. Never put demo passwords or service-role keys in
+frontend code.
+
+For a local, non-Supabase presentation instead, set `VITE_ENABLE_DEMO_LOGIN=true` in
+`EduMind/.env.local` and run `pnpm dev`. This adds role-preview buttons for Educator,
+Reviewer, and Admin. It is a UI-only demo without Supabase data or authentication, and
+is automatically disabled in production builds regardless of the flag.
   
