@@ -3,21 +3,15 @@ import { useState } from 'react';
 import { BookOpen, Chrome, Building2, Mail } from 'lucide-react';
 
 type OAuthProvider = 'google' | 'azure';
-type DemoRole = 'Educator' | 'Reviewer' | 'Admin';
-
-const DEMO_ROLES: { label: string; role: DemoRole }[] = [
-  { label: 'Educator / Faculty', role: 'Educator' },
-  { label: 'Reviewer / Executive Director', role: 'Reviewer' },
-  { label: 'Admin', role: 'Admin' },
-];
 
 interface PublicLoginProps {
   onSignIn: (provider: OAuthProvider) => void;
-  onDemoSignIn?: (role: DemoRole) => void;
+  onDemoSignIn?: (email: string, password: string) => void;
   onSignOut?: () => void;
   onPasswordSignIn?: (email: string, password: string) => void;
   onRegister?: (email: string, password: string) => void;
   supabaseConfigured?: boolean;
+  localDemoMode?: boolean;
   error: string;
   message?: string;
   loading: boolean;
@@ -30,6 +24,7 @@ export default function PublicLogin({
   onPasswordSignIn,
   onRegister,
   supabaseConfigured = true,
+  localDemoMode = false,
   error,
   message,
   loading,
@@ -43,6 +38,11 @@ export default function PublicLogin({
   const handleSubmit = () => {
     if (!email.trim() || !password) {
       setFormError('Please enter both email and password.');
+      return;
+    }
+
+    if (localDemoMode) {
+      onDemoSignIn?.(email, password);
       return;
     }
 
@@ -89,7 +89,7 @@ export default function PublicLogin({
               Sign in securely with your Google, Microsoft, or email account.
             </Typography>
 
-            {!supabaseConfigured && !onDemoSignIn && (
+            {!localDemoMode && !supabaseConfigured && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
                 Supabase is not configured for this build. Set VITE_SUPABASE_URL and
                 VITE_SUPABASE_PUBLISHABLE_KEY in your deployment settings, then redeploy.
@@ -118,7 +118,7 @@ export default function PublicLogin({
               </Button>
             )}
 
-            <div className="space-y-2">
+            {!localDemoMode && <div className="space-y-2">
               <Button
                 fullWidth
                 variant="outlined"
@@ -139,36 +139,22 @@ export default function PublicLogin({
               >
                 Continue with Microsoft
               </Button>
-            </div>
+            </div>}
 
-            {onDemoSignIn && (
+            {localDemoMode && (
               <>
                 <div className="my-5 flex items-center gap-3">
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
-                  <Typography variant="caption" sx={{ color: '#718096' }}>local presentation demo</Typography>
+                  <Typography variant="caption" sx={{ color: '#718096' }}>local demo sign-in</Typography>
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
                 </div>
                 <Alert severity="info" sx={{ mb: 2, borderRadius: '8px' }}>
-                  Demo mode is local to this development server and does not sign in to Supabase.
+                  These presentation-only credentials are local to this development server and do not use Supabase.
                 </Alert>
-                <div className="flex flex-col gap-2">
-                  {DEMO_ROLES.map((demo) => (
-                    <Button
-                      key={demo.role}
-                      fullWidth
-                      variant="outlined"
-                      disabled={loading}
-                      onClick={() => onDemoSignIn(demo.role)}
-                      sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 44 }}
-                    >
-                      Open {demo.label} demo
-                    </Button>
-                  ))}
-                </div>
               </>
             )}
 
-            {(onPasswordSignIn || onRegister) && (
+            {(localDemoMode || onPasswordSignIn || onRegister) && (
               <>
                 <div className="my-5 flex items-center gap-3">
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
@@ -200,7 +186,7 @@ export default function PublicLogin({
                   }}
                   sx={{ mb: 2 }}
                 />
-                {isRegisterMode && (
+                {!localDemoMode && isRegisterMode && (
                   <TextField
                     fullWidth
                     label="Confirm password"
@@ -220,7 +206,7 @@ export default function PublicLogin({
                   />
                 )}
 
-                <div className="flex gap-2 mb-2">
+                {!localDemoMode && <div className="flex gap-2 mb-2">
                   <Button
                     fullWidth
                     variant={isRegisterMode ? 'contained' : 'outlined'}
@@ -237,7 +223,7 @@ export default function PublicLogin({
                   >
                     Register
                   </Button>
-                </div>
+                </div>}
 
                 <Button
                   fullWidth
@@ -245,10 +231,10 @@ export default function PublicLogin({
                   color="primary"
                   startIcon={<Mail className="w-4 h-4" />}
                   onClick={handleSubmit}
-                  disabled={loading || !supabaseConfigured || !email || !password || (isRegisterMode && !confirmPassword)}
+                  disabled={loading || (!localDemoMode && !supabaseConfigured) || !email || !password || (!localDemoMode && isRegisterMode && !confirmPassword)}
                   sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, bgcolor: '#1E3A5F' }}
                 >
-                  {isRegisterMode ? 'Create account with email' : 'Sign in with email'}
+                  {localDemoMode ? 'Sign in to demo account' : isRegisterMode ? 'Create account with email' : 'Sign in with email'}
                 </Button>
               </>
             )}

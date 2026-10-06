@@ -34,7 +34,14 @@ metadata is properly initialized. Never put demo passwords or service-role keys 
 frontend code.
 
 For a local, non-Supabase presentation instead, set `VITE_ENABLE_DEMO_LOGIN=true` in
-`EduMind/.env.local` and run `pnpm dev`. This adds role-preview buttons for Educator,
-Reviewer, and Admin. It is a UI-only demo without Supabase data or authentication, and
-is automatically disabled in production builds regardless of the flag.
+`EduMind/.env.local` and run `pnpm dev`. Use one of these local demo accounts (the shared
+password is `EduMindDemo2026!`):
+
+- Educator / Faculty: `educator.demo@edumind.local`
+- Reviewer / Executive Director: `reviewer.demo@edumind.local`
+- Admin: `admin.demo@edumind.local`
+
+These hard-coded credentials only simulate sign-in for presentations; they do not access
+Supabase or its data. The demo mode is automatically disabled in production builds
+regardless of the flag. Do not use these credentials for real accounts.
   

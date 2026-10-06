@@ -20,13 +20,13 @@ import SyllabusApprovalED from "./components/SyllabusApprovalED";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import AISubjectSession from "./components/AISubjectSession";
 import { getSupabaseClient, hasSupabaseConfig } from "./supabase";
+import { authenticateLocalDemo } from "./demoAuth";
 
 type EnterpriseRole = "faculty" | "executive_director" | "admin";
 type IndividualPlan = "free" | "pro" | "pro_plus";
-type DemoRole = "Educator" | "Reviewer" | "Admin";
-
 const localDemoEnabled =
-  import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_LOGIN === "true";
+  import.meta.env.DEV &&
+  import.meta.env.VITE_ENABLE_DEMO_LOGIN === "true";
 
 interface UserProfile {
   auth_user_id: string;
@@ -51,7 +51,7 @@ export default function App() {
   const currentUserId = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!hasSupabaseConfig()) {
+    if (localDemoEnabled || !hasSupabaseConfig()) {
       setSession(null);
       setProfile(null);
       setDemoProfile(null);
@@ -258,20 +258,20 @@ export default function App() {
     }
   };
 
-  const handleDemoSignIn = (role: DemoRole) => {
+  const handleDemoSignIn = (email: string, password: string) => {
     if (!localDemoEnabled) return;
-    const names: Record<DemoRole, string> = {
-      Educator: "Demo Educator",
-      Reviewer: "Demo Executive Director",
-      Admin: "Demo Administrator",
-    };
+    const account = authenticateLocalDemo(email, password);
+    if (!account) {
+      setAuthError("That demo email or password is incorrect.");
+      return;
+    }
     setAuthError("");
     setAuthMessage("");
     setProfile(null);
     setDemoProfile({
-      auth_user_id: `local-demo-${role.toLowerCase()}`,
-      full_name: names[role],
-      role,
+      auth_user_id: `local-demo-${account.role.toLowerCase()}`,
+      full_name: account.fullName,
+      role: account.role,
     });
     setCurrentPage("dashboard");
   };
@@ -313,6 +313,7 @@ export default function App() {
         onPasswordSignIn={handlePasswordSignIn}
         onRegister={handleEmailSignUp}
         supabaseConfigured={hasSupabaseConfig()}
+        localDemoMode={localDemoEnabled}
       />
     );
   }
