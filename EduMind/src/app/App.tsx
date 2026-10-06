@@ -19,7 +19,7 @@ import EDDashboard from "./components/EDDashboard";
 import SyllabusApprovalED from "./components/SyllabusApprovalED";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
 import AISubjectSession from "./components/AISubjectSession";
-import { getSupabaseClient } from "./supabase";
+import { getSupabaseClient, hasSupabaseConfig } from "./supabase";
 
 type EnterpriseRole = "faculty" | "executive_director" | "admin";
 type IndividualPlan = "free" | "pro" | "pro_plus";
@@ -40,11 +40,20 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
   const [individualPlan] = useState<IndividualPlan>("free");
   const [currentPage, setCurrentPage] = useState("dashboard");
   const currentUserId = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!hasSupabaseConfig()) {
+      setSession(null);
+      setProfile(null);
+      setLoading(false);
+      setAuthError("");
+      return;
+    }
+
     let mounted = true;
     const profileLoads = new Map<string, Promise<UserProfile>>();
 
@@ -111,6 +120,7 @@ export default function App() {
       currentUserId.current = nextUserId;
       setSession(nextSession);
       setAuthError("");
+      setAuthMessage("");
 
       if (!nextSession) {
         profileLoads.clear();
@@ -167,7 +177,14 @@ export default function App() {
   }, []);
 
   const handleSignIn = async (provider: "google" | "azure") => {
+    if (!hasSupabaseConfig()) {
+      setAuthError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.");
+      setAuthLoading(false);
+      return;
+    }
+
     setAuthError("");
+    setAuthMessage("");
     setAuthLoading(true);
     try {
       const client = getSupabaseClient();
@@ -186,7 +203,14 @@ export default function App() {
   };
 
   const handlePasswordSignIn = async (email: string, password: string) => {
+    if (!hasSupabaseConfig()) {
+      setAuthError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.");
+      setAuthLoading(false);
+      return;
+    }
+
     setAuthError("");
+    setAuthMessage("");
     setAuthLoading(true);
     try {
       const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
@@ -198,7 +222,14 @@ export default function App() {
   };
 
   const handleEmailSignUp = async (email: string, password: string) => {
+    if (!hasSupabaseConfig()) {
+      setAuthError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.");
+      setAuthLoading(false);
+      return;
+    }
+
     setAuthError("");
+    setAuthMessage("");
     setAuthLoading(true);
     try {
       const { data, error } = await getSupabaseClient().auth.signUp({
@@ -211,7 +242,8 @@ export default function App() {
       if (error) throw error;
 
       if (data.user && !data.session) {
-        setAuthError("Check your inbox to confirm your email address before signing in.");
+        setAuthMessage("Account created. Check your inbox to confirm your email address before signing in.");
+        setAuthLoading(false);
       }
     } catch (error) {
       setAuthError(getErrorMessage(error));
@@ -243,9 +275,11 @@ export default function App() {
         onSignIn={handleSignIn}
         onSignOut={session ? handleLogout : undefined}
         error={authError}
+        message={authMessage}
         loading={authLoading}
         onPasswordSignIn={handlePasswordSignIn}
         onRegister={handleEmailSignUp}
+        supabaseConfigured={hasSupabaseConfig()}
       />
     );
   }

@@ -4,12 +4,19 @@ import { BookOpen, Chrome, Building2, Mail } from 'lucide-react';
 
 type OAuthProvider = 'google' | 'azure';
 
+const DEMO_ACCOUNTS = [
+  { label: 'Educator / Faculty', email: 'educator.demo@example.com' },
+  { label: 'Reviewer / Executive Director', email: 'reviewer.demo@example.com' },
+];
+
 interface PublicLoginProps {
   onSignIn: (provider: OAuthProvider) => void;
   onSignOut?: () => void;
   onPasswordSignIn?: (email: string, password: string) => void;
   onRegister?: (email: string, password: string) => void;
+  supabaseConfigured?: boolean;
   error: string;
+  message?: string;
   loading: boolean;
 }
 
@@ -18,7 +25,9 @@ export default function PublicLogin({
   onSignOut,
   onPasswordSignIn,
   onRegister,
+  supabaseConfigured = true,
   error,
+  message,
   loading,
 }: PublicLoginProps) {
   const [email, setEmail] = useState('');
@@ -76,9 +85,22 @@ export default function PublicLogin({
               Sign in securely with your Google, Microsoft, or email account.
             </Typography>
 
+            {!supabaseConfigured && (
+              <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
+                Supabase is not configured for this build. Set VITE_SUPABASE_URL and
+                VITE_SUPABASE_PUBLISHABLE_KEY in your deployment settings, then redeploy.
+                SUPABASE_URL and a public anon/publishable SUPABASE_KEY are also supported.
+                Never use a service-role or secret key here.
+              </Alert>
+            )}
             {(error || formError) && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
                 {error || formError}
+              </Alert>
+            )}
+            {message && (
+              <Alert severity="success" sx={{ mb: 2, borderRadius: '8px' }}>
+                {message}
               </Alert>
             )}
             {onSignOut && (
@@ -98,7 +120,7 @@ export default function PublicLogin({
                 variant="outlined"
                 startIcon={<Chrome className="w-4 h-4" />}
                 onClick={() => onSignIn('google')}
-                disabled={loading}
+                disabled={loading || !supabaseConfigured}
                 sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, color: '#1A202C', borderColor: '#E2E8F0' }}
               >
                 Continue with Google
@@ -108,7 +130,7 @@ export default function PublicLogin({
                 variant="outlined"
                 startIcon={<Building2 className="w-4 h-4" />}
                 onClick={() => onSignIn('azure')}
-                disabled={loading}
+                disabled={loading || !supabaseConfigured}
                 sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, color: '#1A202C', borderColor: '#E2E8F0' }}
               >
                 Continue with Microsoft
@@ -192,11 +214,36 @@ export default function PublicLogin({
                   color="primary"
                   startIcon={<Mail className="w-4 h-4" />}
                   onClick={handleSubmit}
-                  disabled={loading || !email || !password || (isRegisterMode && !confirmPassword)}
+                  disabled={loading || !supabaseConfigured || !email || !password || (isRegisterMode && !confirmPassword)}
                   sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, bgcolor: '#1E3A5F' }}
                 >
                   {isRegisterMode ? 'Create account with email' : 'Sign in with email'}
                 </Button>
+                <div className="mt-4">
+                  <Typography variant="caption" sx={{ display: 'block', color: '#718096', mb: 1 }}>
+                    Demo accounts — select an email, then enter its Supabase password:
+                  </Typography>
+                  <div className="flex flex-col gap-1">
+                    {DEMO_ACCOUNTS.map((account) => (
+                      <Button
+                        key={account.email}
+                        size="small"
+                        variant="text"
+                        disabled={loading}
+                        onClick={() => {
+                          setEmail(account.email);
+                          setPassword('');
+                          setConfirmPassword('');
+                          setIsRegisterMode(false);
+                          setFormError('');
+                        }}
+                        sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                      >
+                        {account.label}: {account.email}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
 
