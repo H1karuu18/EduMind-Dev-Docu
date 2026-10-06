@@ -197,6 +197,28 @@ export default function App() {
     }
   };
 
+  const handleEmailSignUp = async (email: string, password: string) => {
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const { data, error } = await getSupabaseClient().auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+
+      if (data.user && !data.session) {
+        setAuthError("Check your inbox to confirm your email address before signing in.");
+      }
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+      setAuthLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     setAuthError("");
     try {
@@ -222,7 +244,8 @@ export default function App() {
         onSignOut={session ? handleLogout : undefined}
         error={authError}
         loading={authLoading}
-        onPasswordSignIn={import.meta.env.VITE_ENABLE_TEST_LOGIN === "true" ? handlePasswordSignIn : undefined}
+        onPasswordSignIn={handlePasswordSignIn}
+        onRegister={handleEmailSignUp}
       />
     );
   }

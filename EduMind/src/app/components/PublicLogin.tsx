@@ -1,6 +1,6 @@
 import { Alert, Button, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
-import { BookOpen, Chrome, Building2 } from 'lucide-react';
+import { BookOpen, Chrome, Building2, Mail } from 'lucide-react';
 
 type OAuthProvider = 'google' | 'azure';
 
@@ -8,6 +8,7 @@ interface PublicLoginProps {
   onSignIn: (provider: OAuthProvider) => void;
   onSignOut?: () => void;
   onPasswordSignIn?: (email: string, password: string) => void;
+  onRegister?: (email: string, password: string) => void;
   error: string;
   loading: boolean;
 }
@@ -16,11 +17,43 @@ export default function PublicLogin({
   onSignIn,
   onSignOut,
   onPasswordSignIn,
+  onRegister,
   error,
   loading,
 }: PublicLoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  const handleSubmit = () => {
+    if (!email.trim() || !password) {
+      setFormError('Please enter both email and password.');
+      return;
+    }
+
+    if (isRegisterMode) {
+      if (password !== confirmPassword) {
+        setFormError('Passwords do not match.');
+        return;
+      }
+      if (!onRegister) {
+        setFormError('Email registration is not available right now.');
+        return;
+      }
+      setFormError('');
+      onRegister(email.trim(), password);
+      return;
+    }
+
+    if (!onPasswordSignIn) {
+      setFormError('Email sign-in is not available right now.');
+      return;
+    }
+    setFormError('');
+    onPasswordSignIn(email.trim(), password);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1E3A5F] via-[#1a3357] to-[#0f2040]">
@@ -40,10 +73,14 @@ export default function PublicLogin({
               Welcome to EduMind
             </Typography>
             <Typography variant="body2" sx={{ color: '#718096', textAlign: 'center', mb: 3 }}>
-              Sign in securely with your Google or Microsoft account.
+              Sign in securely with your Google, Microsoft, or email account.
             </Typography>
 
-            {error && <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>{error}</Alert>}
+            {(error || formError) && (
+              <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
+                {error || formError}
+              </Alert>
+            )}
             {onSignOut && (
               <Button
                 fullWidth
@@ -78,50 +115,93 @@ export default function PublicLogin({
               </Button>
             </div>
 
-            {onPasswordSignIn && (
+            {(onPasswordSignIn || onRegister) && (
               <>
                 <div className="my-5 flex items-center gap-3">
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
-                  <Typography variant="caption" sx={{ color: '#718096' }}>test account</Typography>
+                  <Typography variant="caption" sx={{ color: '#718096' }}>or</Typography>
                   <span className="h-px flex-1 bg-[#E2E8F0]" />
                 </div>
+
                 <TextField
                   fullWidth
-                  label="Test account email"
+                  label="Email address"
                   type="email"
                   autoComplete="username"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (formError) setFormError('');
+                  }}
                   sx={{ mb: 2 }}
                 />
                 <TextField
                   fullWidth
                   label="Password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && email && password && !loading) {
-                      onPasswordSignIn(email, password);
-                    }
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (formError) setFormError('');
                   }}
                   sx={{ mb: 2 }}
                 />
+                {isRegisterMode && (
+                  <TextField
+                    fullWidth
+                    label="Confirm password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(event) => {
+                      setConfirmPassword(event.target.value);
+                      if (formError) setFormError('');
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !loading) {
+                        handleSubmit();
+                      }
+                    }}
+                    sx={{ mb: 2 }}
+                  />
+                )}
+
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    fullWidth
+                    variant={isRegisterMode ? 'contained' : 'outlined'}
+                    onClick={() => setIsRegisterMode(false)}
+                    sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 40 }}
+                  >
+                    Sign in
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant={isRegisterMode ? 'outlined' : 'contained'}
+                    onClick={() => setIsRegisterMode(true)}
+                    sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 40 }}
+                  >
+                    Register
+                  </Button>
+                </div>
+
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={() => onPasswordSignIn(email, password)}
-                  disabled={loading || !email || !password}
+                  color="primary"
+                  startIcon={<Mail className="w-4 h-4" />}
+                  onClick={handleSubmit}
+                  disabled={loading || !email || !password || (isRegisterMode && !confirmPassword)}
                   sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, bgcolor: '#1E3A5F' }}
                 >
-                  Sign in with test account
+                  {isRegisterMode ? 'Create account with email' : 'Sign in with email'}
                 </Button>
               </>
             )}
 
             <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', color: '#718096', mt: 3, lineHeight: 1.5 }}>
-              Your first successful sign-in creates an Educator profile. Password authentication is only shown when enabled for testing.
+              Your first successful sign-in creates an Educator profile. Use Google, Microsoft, or email password registration to continue.
             </Typography>
           </div>
         </div>
