@@ -1,6 +1,13 @@
-import { Alert, Button, TextField, Typography } from '@mui/material';
-import { useState } from 'react';
-import { BookOpen, Chrome, Building2, Mail } from 'lucide-react';
+import {
+  Alert,
+  Button,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { BookOpen, Building2, Chrome, Eye, EyeOff, Mail } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 type OAuthProvider = 'google' | 'azure';
 
@@ -10,11 +17,21 @@ interface PublicLoginProps {
   onSignOut?: () => void;
   onPasswordSignIn?: (email: string, password: string) => void;
   onRegister?: (email: string, password: string) => void;
+  onNavigate?: (path: string) => void;
+  initialMode?: 'login' | 'register';
   supabaseConfigured?: boolean;
   localDemoMode?: boolean;
   error: string;
   message?: string;
   loading: boolean;
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function isStrongPassword(value: string) {
+  return value.length >= 8 && /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value);
 }
 
 export default function PublicLogin({
@@ -23,6 +40,8 @@ export default function PublicLogin({
   onSignOut,
   onPasswordSignIn,
   onRegister,
+  onNavigate,
+  initialMode = 'login',
   supabaseConfigured = true,
   localDemoMode = false,
   error,
@@ -32,21 +51,40 @@ export default function PublicLogin({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(initialMode === 'register');
   const [formError, setFormError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    setIsRegisterMode(initialMode === 'register');
+  }, [initialMode]);
 
   const handleSubmit = () => {
-    if (!email.trim() || !password) {
-      setFormError('Please enter both email and password.');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setFormError('Please enter your email address.');
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setFormError('Please enter your password.');
       return;
     }
 
     if (localDemoMode) {
-      onDemoSignIn?.(email, password);
+      onDemoSignIn?.(trimmedEmail, password);
       return;
     }
 
     if (isRegisterMode) {
+      if (!isStrongPassword(password)) {
+        setFormError('Use at least 8 characters with uppercase, lowercase, and a number.');
+        return;
+      }
       if (password !== confirmPassword) {
         setFormError('Passwords do not match.');
         return;
@@ -56,7 +94,7 @@ export default function PublicLogin({
         return;
       }
       setFormError('');
-      onRegister(email.trim(), password);
+      onRegister(trimmedEmail, password);
       return;
     }
 
@@ -65,12 +103,12 @@ export default function PublicLogin({
       return;
     }
     setFormError('');
-    onPasswordSignIn(email.trim(), password);
+    onPasswordSignIn(trimmedEmail, password);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1E3A5F] via-[#1a3357] to-[#0f2040]">
-      <div className="w-full max-w-md px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1E3A5F] via-[#1a3357] to-[#0f2040] px-4">
+      <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-[#E63946] flex items-center justify-center">
@@ -83,18 +121,18 @@ export default function PublicLogin({
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="p-8">
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, textAlign: 'center' }}>
-              Welcome to EduMind
+              {isRegisterMode ? 'Create your account' : 'Welcome back'}
             </Typography>
             <Typography variant="body2" sx={{ color: '#718096', textAlign: 'center', mb: 3 }}>
-              Sign in securely with your Google, Microsoft, or email account.
+              {isRegisterMode
+                ? 'Set up your EduMind workspace and start organizing your course materials.'
+                : 'Sign in securely with your Google, Microsoft, or email account.'}
             </Typography>
 
             {!localDemoMode && !supabaseConfigured && (
               <Alert severity="error" sx={{ mb: 2, borderRadius: '8px' }}>
                 Supabase is not configured for this build. Set VITE_SUPABASE_URL and
                 VITE_SUPABASE_PUBLISHABLE_KEY in your deployment settings, then redeploy.
-                SUPABASE_URL and a public anon/publishable SUPABASE_KEY are also supported.
-                Never use a service-role or secret key here.
               </Alert>
             )}
             {(error || formError) && (
@@ -118,28 +156,30 @@ export default function PublicLogin({
               </Button>
             )}
 
-            {!localDemoMode && <div className="space-y-2">
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Chrome className="w-4 h-4" />}
-                onClick={() => onSignIn('google')}
-                disabled={loading || !supabaseConfigured}
-                sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, color: '#1A202C', borderColor: '#E2E8F0' }}
-              >
-                Continue with Google
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Building2 className="w-4 h-4" />}
-                onClick={() => onSignIn('azure')}
-                disabled={loading || !supabaseConfigured}
-                sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, color: '#1A202C', borderColor: '#E2E8F0' }}
-              >
-                Continue with Microsoft
-              </Button>
-            </div>}
+            {!localDemoMode && (
+              <div className="space-y-2">
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Chrome className="w-4 h-4" />}
+                  onClick={() => onSignIn('google')}
+                  disabled={loading || !supabaseConfigured}
+                  sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, color: '#1A202C', borderColor: '#E2E8F0' }}
+                >
+                  Continue with Google
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<Building2 className="w-4 h-4" />}
+                  onClick={() => onSignIn('azure')}
+                  disabled={loading || !supabaseConfigured}
+                  sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 48, color: '#1A202C', borderColor: '#E2E8F0' }}
+                >
+                  Continue with Microsoft
+                </Button>
+              </div>
+            )}
 
             {localDemoMode && (
               <>
@@ -177,12 +217,28 @@ export default function PublicLogin({
                 <TextField
                   fullWidth
                   label="Password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
                     if (formError) setFormError('');
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !loading) handleSubmit();
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="Toggle password visibility"
+                          onClick={() => setShowPassword((value) => !value)}
+                          edge="end"
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
                   }}
                   sx={{ mb: 2 }}
                 />
@@ -190,7 +246,7 @@ export default function PublicLogin({
                   <TextField
                     fullWidth
                     label="Confirm password"
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(event) => {
@@ -198,32 +254,65 @@ export default function PublicLogin({
                       if (formError) setFormError('');
                     }}
                     onKeyDown={(event) => {
-                      if (event.key === 'Enter' && !loading) {
-                        handleSubmit();
-                      }
+                      if (event.key === 'Enter' && !loading) handleSubmit();
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="Toggle confirm password visibility"
+                            onClick={() => setShowConfirmPassword((value) => !value)}
+                            edge="end"
+                          >
+                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
                     }}
                     sx={{ mb: 2 }}
                   />
                 )}
 
-                {!localDemoMode && <div className="flex gap-2 mb-2">
-                  <Button
-                    fullWidth
-                    variant={isRegisterMode ? 'contained' : 'outlined'}
-                    onClick={() => setIsRegisterMode(false)}
-                    sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 40 }}
-                  >
-                    Sign in
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant={isRegisterMode ? 'outlined' : 'contained'}
-                    onClick={() => setIsRegisterMode(true)}
-                    sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 40 }}
-                  >
-                    Register
-                  </Button>
-                </div>}
+                {!localDemoMode && (
+                  <div className="flex items-center justify-end mb-2">
+                    <Button
+                      variant="text"
+                      onClick={() => onNavigate?.('/forgot-password')}
+                      sx={{ textTransform: 'none', color: '#1E3A5F', p: 0 }}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
+                )}
+
+                {!localDemoMode && (
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      fullWidth
+                      variant={!isRegisterMode ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setIsRegisterMode(false);
+                        setFormError('');
+                        onNavigate?.('/login');
+                      }}
+                      sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 40 }}
+                    >
+                      Sign in
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant={isRegisterMode ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setIsRegisterMode(true);
+                        setFormError('');
+                        onNavigate?.('/signup');
+                      }}
+                      sx={{ textTransform: 'none', borderRadius: '8px', minHeight: 40 }}
+                    >
+                      Register
+                    </Button>
+                  </div>
+                )}
 
                 <Button
                   fullWidth

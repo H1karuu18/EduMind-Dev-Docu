@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router";
+import { Alert, Button, TextField, Typography } from "@mui/material";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
+import LandingPage from "./components/LandingPage";
 import PublicLogin from "./components/PublicLogin";
 import IndividualDashboard from "./components/IndividualDashboard";
 import LessonPlanBuilder from "./components/LessonPlanBuilder";
@@ -35,10 +46,30 @@ interface UserProfile {
 }
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "An unexpected authentication error occurred.";
+  return error instanceof Error
+    ? error.message
+    : "An unexpected authentication error occurred.";
 }
 
-export default function App() {
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function isStrongPassword(password: string) {
+  return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password);
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  );
+}
+
+function AppShell() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [demoProfile, setDemoProfile] = useState<UserProfile | null>(null);
@@ -49,6 +80,10 @@ export default function App() {
   const [individualPlan] = useState<IndividualPlan>("free");
   const [currentPage, setCurrentPage] = useState("dashboard");
   const currentUserId = useRef<string | null>(null);
+
+  const isAuthenticated = Boolean(session || demoProfile);
+  const intendedDestination =
+    (location.state as { from?: string } | null)?.from ?? "/dashboard";
 
   useEffect(() => {
     if (localDemoEnabled || !hasSupabaseConfig()) {
@@ -77,18 +112,21 @@ export default function App() {
         if (lookupError) throw lookupError;
         if (existing) return existing as UserProfile;
         if (!user.email) {
-          throw new Error("The OAuth provider did not return an email address. Enable email access for this provider.");
+          throw new Error(
+            "The OAuth provider did not return an email address. Enable email access for this provider.",
+          );
         }
 
-        const metadataName = user.user_metadata?.full_name
-          || user.user_metadata?.name
-          || user.user_metadata?.fullName;
-        const fullName = typeof metadataName === "string" && metadataName.trim()
-          ? metadataName.trim()
-          : user.email?.split("@")[0] || "Educator";
-        const avatarMetadata = user.user_metadata?.avatar_url
-          || user.user_metadata?.picture
-          || null;
+        const metadataName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.fullName;
+        const fullName =
+          typeof metadataName === "string" && metadataName.trim()
+            ? metadataName.trim()
+            : user.email?.split("@")[0] || "Educator";
+        const avatarMetadata =
+          user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
         const avatarUrl = typeof avatarMetadata === "string" ? avatarMetadata : null;
 
         const { error: insertError } = await client.from("profiles").upsert(
@@ -145,6 +183,9 @@ export default function App() {
             setProfile(nextProfile);
             setCurrentPage("dashboard");
             setLoading(false);
+            if (location.pathname === "/login" || location.pathname === "/signup") {
+              navigate("/dashboard", { replace: true });
+            }
           })
           .catch((error: unknown) => {
             if (!mounted || currentUserId.current !== nextUserId) return;
@@ -181,11 +222,13 @@ export default function App() {
       mounted = false;
       unsubscribe();
     };
-  }, []);
+  }, [location.pathname, navigate]);
 
   const handleSignIn = async (provider: "google" | "azure") => {
     if (!hasSupabaseConfig()) {
-      setAuthError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.");
+      setAuthError(
+        "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.",
+      );
       setAuthLoading(false);
       return;
     }
@@ -211,7 +254,15 @@ export default function App() {
 
   const handlePasswordSignIn = async (email: string, password: string) => {
     if (!hasSupabaseConfig()) {
-      setAuthError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.");
+      setAuthError(
+        "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.",
+      );
+      setAuthLoading(false);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setAuthError("Please use a valid email address.");
       setAuthLoading(false);
       return;
     }
@@ -220,17 +271,44 @@ export default function App() {
     setAuthMessage("");
     setAuthLoading(true);
     try {
-      const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+      const { error } = await getSupabaseClient().auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
       if (error) throw error;
+      setAuthMessage("Signed in successfully.");
+      navigate(intendedDestination, { replace: true });
     } catch (error) {
-      setAuthError(getErrorMessage(error));
+      const message = getErrorMessage(error);
+      setAuthError(
+        message.includes("Invalid login") || message.includes("invalid login")
+          ? "The email or password is incorrect. Please try again."
+          : message,
+      );
+    } finally {
       setAuthLoading(false);
     }
   };
 
   const handleEmailSignUp = async (email: string, password: string) => {
     if (!hasSupabaseConfig()) {
-      setAuthError("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.");
+      setAuthError(
+        "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.",
+      );
+      setAuthLoading(false);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setAuthError("Please enter a valid email address.");
+      setAuthLoading(false);
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      setAuthError(
+        "Use at least 8 characters with uppercase, lowercase, and a number.",
+      );
       setAuthLoading(false);
       return;
     }
@@ -240,20 +318,32 @@ export default function App() {
     setAuthLoading(true);
     try {
       const { data, error } = await getSupabaseClient().auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: `${window.location.origin}/login`,
         },
       });
       if (error) throw error;
 
       if (data.user && !data.session) {
-        setAuthMessage("Account created. Check your inbox to confirm your email address before signing in.");
-        setAuthLoading(false);
+        setAuthMessage(
+          "Account created. Please verify your email address before signing in.",
+        );
+        navigate("/login", { replace: true });
+        return;
       }
+
+      setAuthMessage("Account created successfully. Redirecting to your dashboard.");
+      navigate("/dashboard", { replace: true });
     } catch (error) {
-      setAuthError(getErrorMessage(error));
+      const message = getErrorMessage(error);
+      setAuthError(
+        message.includes("User already registered") || message.includes("already registered")
+          ? "An account with this email already exists. Please sign in instead."
+          : message,
+      );
+    } finally {
       setAuthLoading(false);
     }
   };
@@ -274,6 +364,7 @@ export default function App() {
       role: account.role,
     });
     setCurrentPage("dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   const handleLogout = async () => {
@@ -282,13 +373,80 @@ export default function App() {
       setDemoProfile(null);
       setProfile(null);
       setCurrentPage("dashboard");
+      navigate("/login", { replace: true });
       return;
     }
     try {
       const { error } = await getSupabaseClient().auth.signOut();
       if (error) throw error;
+      navigate("/login", { replace: true });
     } catch (error) {
       setAuthError(getErrorMessage(error));
+    }
+  };
+
+  const handlePasswordResetRequest = async (email: string) => {
+    if (!hasSupabaseConfig()) {
+      setAuthError(
+        "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to continue.",
+      );
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setAuthError("Please enter a valid email address.");
+      return;
+    }
+
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setAuthMessage("A password reset link has been sent to your email.");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      setAuthError(
+        getErrorMessage(error).includes("user not found")
+          ? "We could not find an account for that email address."
+          : getErrorMessage(error),
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (password: string, confirmPassword: string) => {
+    if (!password || !confirmPassword) {
+      setAuthError("Please enter and confirm your new password.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setAuthError("Passwords do not match.");
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      setAuthError(
+        "Use at least 8 characters with uppercase, lowercase, and a number.",
+      );
+      return;
+    }
+
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const { error } = await getSupabaseClient().auth.updateUser({ password });
+      if (error) throw error;
+      setAuthMessage("Your password was updated successfully.");
+      navigate("/login", { replace: true });
+    } catch (error) {
+      setAuthError(getErrorMessage(error));
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -301,104 +459,399 @@ export default function App() {
   }
 
   const activeProfile = demoProfile ?? profile;
-  if ((!session && !demoProfile) || !activeProfile) {
-    return (
-      <PublicLogin
-        onSignIn={handleSignIn}
-        onDemoSignIn={localDemoEnabled ? handleDemoSignIn : undefined}
-        onSignOut={session || demoProfile ? handleLogout : undefined}
-        error={authError}
-        message={authMessage}
-        loading={authLoading}
-        onPasswordSignIn={handlePasswordSignIn}
-        onRegister={handleEmailSignUp}
-        supabaseConfigured={hasSupabaseConfig()}
-        localDemoMode={localDemoEnabled}
-      />
-    );
-  }
 
-  const userName = activeProfile.full_name;
-  const enterpriseRole: EnterpriseRole = activeProfile.role === "Admin"
-    ? "admin"
-    : activeProfile.role === "Reviewer"
-      ? "executive_director"
-      : "faculty";
-  const handleNavigate = (page: string) => setCurrentPage(page);
+  const renderAuthenticatedApp = () => {
+    if (!activeProfile) {
+      return (
+        <PublicLogin
+          onSignIn={handleSignIn}
+          onDemoSignIn={localDemoEnabled ? handleDemoSignIn : undefined}
+          onSignOut={session || demoProfile ? handleLogout : undefined}
+          error={authError}
+          message={authMessage}
+          loading={authLoading}
+          onPasswordSignIn={handlePasswordSignIn}
+          onRegister={handleEmailSignUp}
+          supabaseConfigured={hasSupabaseConfig()}
+          localDemoMode={localDemoEnabled}
+          onNavigate={navigate}
+        />
+      );
+    }
 
-  const renderEnterprisePage = () => {
-    if (enterpriseRole === "admin") return <AdminPanel />;
+    const userName = activeProfile.full_name;
+    const enterpriseRole: EnterpriseRole =
+      activeProfile.role === "Admin"
+        ? "admin"
+        : activeProfile.role === "Reviewer"
+          ? "executive_director"
+          : "faculty";
 
-    if (enterpriseRole === "executive_director") {
+    const renderEnterprisePage = () => {
+      if (enterpriseRole === "admin") return <AdminPanel />;
+
+      if (enterpriseRole === "executive_director") {
+        switch (currentPage) {
+          case "pending-approvals":
+            return <EDDashboard userName={userName} onNavigate={setCurrentPage} />;
+          case "ed-approval":
+            return <SyllabusApprovalED />;
+          case "version-history":
+            return <VersionHistory />;
+          case "cross-section":
+            return <CrossSectionMonitor />;
+          case "analytics":
+            return <AnalyticsDashboard />;
+          case "repository":
+            return <ActivityBank />;
+          case "ai-session":
+            return <AISubjectSession />;
+          default:
+            return <EDDashboard userName={userName} onNavigate={setCurrentPage} />;
+        }
+      }
+
       switch (currentPage) {
-        case "pending-approvals":
-          return <EDDashboard userName={userName} onNavigate={handleNavigate} />;
-        case "ed-approval":
-          return <SyllabusApprovalED />;
+        case "my-workspace":
+          return (
+            <IndividualDashboard
+              userName={userName}
+              plan={individualPlan}
+              onNavigate={setCurrentPage}
+            />
+          );
+        case "my-syllabi":
+        case "submit-syllabus":
+          return <SyllabusSubmission />;
+        case "lesson-plans":
+          return <LessonPlanBuilder />;
+        case "roadmap":
+          return <CurriculumRoadmap />;
+        case "commit-log":
+          return <CommitLog />;
+        case "library":
+          return <ActivityBank />;
+        case "peer-review":
+          return <PeerReviewScreen />;
+        case "ai-session":
+          return <AIKnowledgeSession />;
+        case "activity-bank":
+        case "ppt-bank":
+          return <ActivityBank />;
         case "version-history":
           return <VersionHistory />;
         case "cross-section":
           return <CrossSectionMonitor />;
-        case "analytics":
-          return <AnalyticsDashboard />;
-        case "repository":
-          return <ActivityBank />;
-        case "ai-session":
-          return <AISubjectSession />;
+        case "collaborations":
+        case "collaboration":
+          return <CollaborationsPage />;
         default:
-          return <EDDashboard userName={userName} onNavigate={handleNavigate} />;
+          return <EnterpriseFacultyDashboard userName={userName} onNavigate={setCurrentPage} />;
       }
-    }
+    };
 
-    switch (currentPage) {
-      case "my-workspace":
-        return (
-          <IndividualDashboard
-            userName={userName}
-            plan={individualPlan}
-            onNavigate={handleNavigate}
-          />
-        );
-      case "my-syllabi":
-      case "submit-syllabus":
-        return <SyllabusSubmission />;
-      case "lesson-plans":
-        return <LessonPlanBuilder />;
-      case "roadmap":
-        return <CurriculumRoadmap />;
-      case "commit-log":
-        return <CommitLog />;
-      case "library":
-        return <ActivityBank />;
-      case "peer-review":
-        return <PeerReviewScreen />;
-      case "ai-session":
-        return <AIKnowledgeSession />;
-      case "activity-bank":
-      case "ppt-bank":
-        return <ActivityBank />;
-      case "version-history":
-        return <VersionHistory />;
-      case "cross-section":
-        return <CrossSectionMonitor />;
-      case "collaborations":
-      case "collaboration":
-        return <CollaborationsPage />;
-      default:
-        return <EnterpriseFacultyDashboard userName={userName} onNavigate={handleNavigate} />;
-    }
+    return (
+      <div className="size-full flex">
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={setCurrentPage}
+          userRole={enterpriseRole}
+          userName={userName}
+          onLogout={handleLogout}
+        />
+        <div className="flex-1 overflow-hidden">{renderEnterprisePage()}</div>
+      </div>
+    );
   };
 
   return (
-    <div className="size-full flex">
-      <Sidebar
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        userRole={enterpriseRole}
-        userName={userName}
-        onLogout={handleLogout}
+    <Routes>
+      <Route path="/" element={<LandingPage onNavigate={navigate} />} />
+      <Route
+        path="/login"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <PublicLogin
+              onSignIn={handleSignIn}
+              onDemoSignIn={localDemoEnabled ? handleDemoSignIn : undefined}
+              onSignOut={session || demoProfile ? handleLogout : undefined}
+              error={authError}
+              message={authMessage}
+              loading={authLoading}
+              onPasswordSignIn={handlePasswordSignIn}
+              onRegister={handleEmailSignUp}
+              supabaseConfigured={hasSupabaseConfig()}
+              localDemoMode={localDemoEnabled}
+              initialMode="login"
+              onNavigate={navigate}
+            />
+          )
+        }
       />
-      <div className="flex-1 overflow-hidden">{renderEnterprisePage()}</div>
+      <Route
+        path="/signup"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <PublicLogin
+              onSignIn={handleSignIn}
+              onDemoSignIn={localDemoEnabled ? handleDemoSignIn : undefined}
+              onSignOut={session || demoProfile ? handleLogout : undefined}
+              error={authError}
+              message={authMessage}
+              loading={authLoading}
+              onPasswordSignIn={handlePasswordSignIn}
+              onRegister={handleEmailSignUp}
+              supabaseConfigured={hasSupabaseConfig()}
+              localDemoMode={localDemoEnabled}
+              initialMode="register"
+              onNavigate={navigate}
+            />
+          )
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <PasswordRecoveryPage
+              error={authError}
+              message={authMessage}
+              loading={authLoading}
+              onResetRequest={handlePasswordResetRequest}
+              onNavigate={navigate}
+            />
+          )
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/dashboard" replace />
+          ) : (
+            <ResetPasswordPage
+              error={authError}
+              message={authMessage}
+              loading={authLoading}
+              onUpdatePassword={handlePasswordUpdate}
+              onNavigate={navigate}
+            />
+          )
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          isAuthenticated ? (
+            renderAuthenticatedApp()
+          ) : (
+            <Navigate to="/login" replace state={{ from: location.pathname }} />
+          )
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+interface PasswordRecoveryPageProps {
+  onResetRequest: (email: string) => void;
+  onNavigate: (path: string) => void;
+  error: string;
+  message?: string;
+  loading: boolean;
+}
+
+function PasswordRecoveryPage({
+  onResetRequest,
+  onNavigate,
+  error,
+  message,
+  loading,
+}: PasswordRecoveryPageProps) {
+  const [email, setEmail] = useState("");
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-slate-200">
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onNavigate("/login")}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700"
+            aria-label="Back to sign in"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div className="flex items-center gap-2 text-[#1E3A5F] font-semibold">
+            <ShieldCheck size={18} />
+            EduMind
+          </div>
+        </div>
+
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+          Reset your password
+        </Typography>
+        <Typography variant="body2" sx={{ color: "#64748b", mb: 3 }}>
+          Enter the email linked to your account and we will send a reset link.
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: "8px" }}>
+            {error}
+          </Alert>
+        )}
+        {message && (
+          <Alert severity="success" sx={{ mb: 2, borderRadius: "8px" }}>
+            {message}
+          </Alert>
+        )}
+
+        <TextField
+          fullWidth
+          label="Email address"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          autoComplete="email"
+          sx={{ mb: 2 }}
+        />
+
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={() => onResetRequest(email)}
+          disabled={loading || !email.trim()}
+          sx={{
+            textTransform: "none",
+            borderRadius: "10px",
+            minHeight: 48,
+            bgcolor: "#1E3A5F",
+            mb: 2,
+          }}
+        >
+          Send reset link
+        </Button>
+
+        <Button
+          fullWidth
+          variant="text"
+          onClick={() => onNavigate("/login")}
+          sx={{ textTransform: "none", color: "#1E3A5F" }}
+        >
+          Back to sign in
+        </Button>
+      </div>
     </div>
   );
 }
+
+interface ResetPasswordPageProps {
+  onUpdatePassword: (password: string, confirmPassword: string) => void;
+  onNavigate: (path: string) => void;
+  error: string;
+  message?: string;
+  loading: boolean;
+}
+
+function ResetPasswordPage({
+  onUpdatePassword,
+  onNavigate,
+  error,
+  message,
+  loading,
+}: ResetPasswordPageProps) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-slate-200">
+        <div className="mb-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => onNavigate("/login")}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-700"
+            aria-label="Back to sign in"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div className="flex items-center gap-2 text-[#1E3A5F] font-semibold">
+            <ShieldCheck size={18} />
+            EduMind
+          </div>
+        </div>
+
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+          Create a new password
+        </Typography>
+        <Typography variant="body2" sx={{ color: "#64748b", mb: 3 }}>
+          Choose a strong password to secure your account.
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: "8px" }}>
+            {error}
+          </Alert>
+        )}
+        {message && (
+          <Alert severity="success" sx={{ mb: 2, borderRadius: "8px" }}>
+            {message}
+          </Alert>
+        )}
+
+        <TextField
+          fullWidth
+          label="New password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          autoComplete="new-password"
+          sx={{ mb: 2 }}
+        />
+        <TextField
+          fullWidth
+          label="Confirm new password"
+          type="password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          autoComplete="new-password"
+          sx={{ mb: 2 }}
+        />
+
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={() => onUpdatePassword(password, confirmPassword)}
+          disabled={loading || !password || !confirmPassword}
+          sx={{
+            textTransform: "none",
+            borderRadius: "10px",
+            minHeight: 48,
+            bgcolor: "#1E3A5F",
+            mb: 2,
+          }}
+        >
+          Update password
+        </Button>
+
+        <Button
+          fullWidth
+          variant="text"
+          onClick={() => onNavigate("/login")}
+          sx={{ textTransform: "none", color: "#1E3A5F" }}
+        >
+          Return to sign in
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default App;

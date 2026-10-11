@@ -1,8 +1,8 @@
-import { Button, Typography, Box, Chip } from '@mui/material';
-import { BookOpen, GitBranch, Brain, Server, Shield, Wifi } from 'lucide-react';
+import { Button, Typography } from '@mui/material';
+import { BookOpen, Brain, GitBranch, Server, Shield, Wifi } from 'lucide-react';
 
 interface LandingPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (path: string) => void;
 }
 
 const FEATURES = [
@@ -32,7 +32,6 @@ const TRUST_BADGES = [
 export default function LandingPage({ onNavigate }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-['Inter',sans-serif]">
-      {/* Nav */}
       <nav className="bg-[#1E3A5F] px-8 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-[#E63946] flex items-center justify-center">
@@ -43,10 +42,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           </Typography>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          {['Home', 'Features', 'Pricing', 'About'].map(item => (
+          {['Home', 'About', 'Features', 'Contact'].map((item) => (
             <button
               key={item}
-              onClick={() => item === 'Pricing' && onNavigate('pricing')}
+              type="button"
+              onClick={() => onNavigate(item === 'Home' ? '/' : item === 'About' ? '/login' : item === 'Features' ? '/signup' : '/login')}
               className="text-slate-300 hover:text-white text-sm font-medium transition-colors"
             >
               {item}
@@ -57,38 +57,37 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
           <Button
             variant="outlined"
             size="small"
-            onClick={() => onNavigate('login')}
+            onClick={() => onNavigate('/login')}
             sx={{
               color: 'white', borderColor: 'rgba(255,255,255,0.4)',
               textTransform: 'none', borderRadius: '8px', minHeight: 36,
               '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' }
             }}
           >
-            Log In
+            Sign In
           </Button>
           <Button
             variant="contained"
             size="small"
-            onClick={() => onNavigate('login')}
+            onClick={() => onNavigate('/signup')}
             sx={{
               bgcolor: '#E63946', color: 'white', textTransform: 'none',
               borderRadius: '8px', minHeight: 36,
               '&:hover': { bgcolor: '#cc2f3b' }
             }}
           >
-            Get Started Free
+            Get Started
           </Button>
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="bg-[#1E3A5F] px-8 py-24 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 gap-16 items-center">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <Typography
               variant="h1"
               sx={{
-                fontWeight: 800, color: 'white', fontSize: '2.75rem',
+                fontWeight: 800, color: 'white', fontSize: { xs: '2.5rem', md: '2.75rem' },
                 lineHeight: 1.15, letterSpacing: '-0.03em', mb: 3
               }}
             >
@@ -100,11 +99,11 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               EduMind is the personal knowledge workspace for educators — build lesson plans,
               version your syllabi like code, and query your course materials through AI.
             </Typography>
-            <div className="flex gap-3 mb-8">
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Button
                 variant="contained"
                 size="large"
-                onClick={() => onNavigate('login')}
+                onClick={() => onNavigate('/signup')}
                 sx={{
                   bgcolor: '#E63946', textTransform: 'none', borderRadius: '8px',
                   minHeight: 44, px: 3, fontWeight: 600,
@@ -116,20 +115,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               <Button
                 variant="outlined"
                 size="large"
-                onClick={() => onNavigate('enterprise-login')}
+                onClick={() => onNavigate('/login')}
                 sx={{
-                  color: 'white', borderColor: '#1E3A5F',
+                  color: 'white', borderColor: 'rgba(255,255,255,0.4)',
                   bgcolor: 'rgba(255,255,255,0.05)',
                   textTransform: 'none', borderRadius: '8px',
                   minHeight: 44, px: 3, fontWeight: 600,
                   '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }
                 }}
               >
-                See Enterprise
+                Explore the App
               </Button>
             </div>
-            <div className="flex gap-4">
-              {TRUST_BADGES.map(badge => {
+            <div className="flex flex-wrap gap-4">
+              {TRUST_BADGES.map((badge) => {
                 const Icon = badge.icon;
                 return (
                   <div key={badge.label} className="flex items-center gap-1.5 text-slate-400">
@@ -143,7 +142,6 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
             </div>
           </div>
 
-          {/* Dashboard mockup */}
           <div className="bg-white/10 rounded-2xl p-6 border border-white/20 backdrop-blur-sm">
             <div className="bg-[#0f2040] rounded-xl p-4 mb-3">
               <div className="flex items-center gap-2 mb-3">
@@ -151,7 +149,7 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
                 <div className="w-2 h-2 rounded-full bg-yellow-400" />
                 <div className="w-2 h-2 rounded-full bg-green-400" />
                 <Typography variant="caption" sx={{ color: '#475569', ml: 2, fontSize: '0.7rem' }}>
-                  MNTSDEV — Lesson Plan Editor
+                  EduMind — Lesson Plan Editor
                 </Typography>
               </div>
               <div className="space-y-2">
@@ -179,21 +177,20 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Feature strip */}
       <section className="px-8 py-16 max-w-6xl mx-auto">
-        <div className="grid grid-cols-3 gap-8">
-          {FEATURES.map(f => {
-            const Icon = f.icon;
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {FEATURES.map((feature) => {
+            const Icon = feature.icon;
             return (
-              <div key={f.title} className="bg-white rounded-xl p-6 border border-[#E2E8F0] hover:shadow-md transition-shadow">
+              <div key={feature.title} className="bg-white rounded-xl p-6 border border-[#E2E8F0] hover:shadow-md transition-shadow">
                 <div className="w-10 h-10 rounded-lg bg-[#EBF0F8] flex items-center justify-center mb-4">
                   <Icon className="w-5 h-5 text-[#1E3A5F]" />
                 </div>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1A202C', mb: 1 }}>
-                  {f.title}
+                  {feature.title}
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#718096', lineHeight: 1.6 }}>
-                  {f.desc}
+                  {feature.desc}
                 </Typography>
               </div>
             );
@@ -201,28 +198,26 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Enterprise CTA strip */}
       <section className="bg-[#1E3A5F] px-8 py-12 text-center">
         <Typography variant="h5" sx={{ fontWeight: 700, color: 'white', mb: 1 }}>
-          EduMind Enterprise
+          Create a smarter teaching workflow
         </Typography>
         <Typography variant="body2" sx={{ color: '#94a3b8', mb: 4 }}>
-          Bring EduMind to your institution — custom domain, SSO, admin panel, full RBAC.
+          Capture lesson plans, coordinate review workflows, and move from ideas to delivery without losing context.
         </Typography>
         <Button
           variant="outlined"
-          onClick={() => onNavigate('enterprise-login')}
+          onClick={() => onNavigate('/signup')}
           sx={{
             color: 'white', borderColor: 'rgba(255,255,255,0.4)',
             textTransform: 'none', borderRadius: '8px', minHeight: 44, px: 4,
             '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: 'white' }
           }}
         >
-          Learn About Enterprise
+          Get Started
         </Button>
       </section>
 
-      {/* Footer */}
       <footer className="bg-[#0f2040] px-8 py-6 text-center">
         <Typography variant="caption" sx={{ color: '#475569' }}>
           © 2026 EduMind — Joveinvi Techne · School of Computing and Information Technologies, APC
